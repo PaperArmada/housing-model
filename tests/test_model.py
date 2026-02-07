@@ -95,11 +95,26 @@ class TestSimulation:
         assert s10.rent_net_worth_real < s10.rent_net_worth
 
     def test_cost_base_tracked(self):
-        """Cost base should grow as surplus is invested."""
+        """Cost base should grow as surplus and reinvested dividends accumulate."""
         params = ScenarioParams(time_horizon_years=10)
         snapshots = simulate(params)
-        # Rent contributions should be >= initial savings (surplus gets added)
+        # Rent contributions should be >= initial savings (surplus + reinvested dividends)
         assert snapshots[-1].rent_contributions >= params.existing_savings
+
+    def test_cost_base_includes_reinvested_dividends(self):
+        """Cost base must include reinvested after-tax dividends to avoid double-taxation."""
+        params = ScenarioParams(time_horizon_years=10)
+        snapshots = simulate(params)
+        # With dividends being reinvested, contributions should grow beyond
+        # just the initial savings + surplus (dividends add to cost base each year)
+        # Using zero dividend yield as baseline: no reinvested dividends
+        no_div = ScenarioParams(
+            time_horizon_years=10,
+            investment=InvestmentParams(return_rate=0.07, dividend_yield=0.0),
+        )
+        no_div_snaps = simulate(no_div)
+        # With dividends, cost base should be higher (reinvested dividends tracked)
+        assert snapshots[-1].rent_contributions > no_div_snaps[-1].rent_contributions
 
     def test_buy_cheaper_than_rent_initially(self):
         """With default params, rent scenario starts richer (no deposit spent)."""
@@ -124,6 +139,63 @@ class TestSimulation:
         var_snaps = simulate(variable)
         # With rates dropping at year 5, buyer should end up better off
         assert var_snaps[-1].buy_net_worth > fixed_snaps[-1].buy_net_worth
+
+    def test_fhog_applied_for_new_build_fhb(self):
+        """First home buyers purchasing new builds should receive the FHOG."""
+        no_grant = ScenarioParams(
+            buy=BuyParams(
+                state="QLD", first_home_buyer=True, new_build=False,
+                purchase_price=600_000,
+            ),
+            time_horizon_years=5,
+        )
+        with_grant = ScenarioParams(
+            buy=BuyParams(
+                state="QLD", first_home_buyer=True, new_build=True,
+                purchase_price=600_000,
+            ),
+            time_horizon_years=5,
+        )
+        no_grant_snaps = simulate(no_grant)
+        with_grant_snaps = simulate(with_grant)
+        # QLD FHOG is $30k for new builds — buyer starts with more investments
+        assert with_grant_snaps[0].buy_investments > no_grant_snaps[0].buy_investments
+
+    def test_fhog_not_applied_for_non_fhb(self):
+        """Non-first-home-buyers should not receive FHOG even for new builds."""
+        params = ScenarioParams(
+            buy=BuyParams(
+                state="QLD", first_home_buyer=False, new_build=True,
+                purchase_price=600_000,
+            ),
+            time_horizon_years=5,
+        )
+        fhb_params = ScenarioParams(
+            buy=BuyParams(
+                state="QLD", first_home_buyer=True, new_build=True,
+                purchase_price=600_000,
+            ),
+            time_horizon_years=5,
+        )
+        non_fhb = simulate(params)
+        fhb = simulate(fhb_params)
+        # FHB gets stamp duty exemption + FHOG, so much better starting position
+        assert fhb[0].buy_investments > non_fhb[0].buy_investments
+
+    def test_franking_credits_boost_investments(self):
+        """Franking credits should reduce dividend tax and boost portfolio growth."""
+        no_franking = ScenarioParams(
+            time_horizon_years=10,
+            investment=InvestmentParams(franking_rate=0.0),
+        )
+        with_franking = ScenarioParams(
+            time_horizon_years=10,
+            investment=InvestmentParams(franking_rate=1.0),
+        )
+        no_frank_snaps = simulate(no_franking)
+        frank_snaps = simulate(with_franking)
+        # With franking, investments grow faster (lower tax drag)
+        assert frank_snaps[-1].rent_investments > no_frank_snaps[-1].rent_investments
 
 
 class TestNetWorthAtSale:

@@ -23,7 +23,7 @@ cheaper in a given year invests the surplus.
 from dataclasses import dataclass
 
 from housing.params import ScenarioParams
-from housing.tax import calc_cgt
+from housing.tax import calc_cgt, fhog
 
 
 @dataclass
@@ -91,17 +91,37 @@ def mortgage_balance_after_year(
 
 
 def _grow_investments(
-    portfolio: float, inv_return_rate: float, dividend_yield: float, marginal_rate: float
-) -> float:
-    """Grow an investment portfolio for one year, paying tax on dividends."""
+    portfolio: float,
+    inv_return_rate: float,
+    dividend_yield: float,
+    marginal_rate: float,
+    franking_rate: float = 0.0,
+) -> tuple[float, float]:
+    """Grow an investment portfolio for one year, paying tax on dividends.
+
+    Returns (new_portfolio_value, net_reinvested_dividends).
+    net_reinvested_dividends is the after-tax dividend amount that should
+    be added to the cost base to avoid double-taxation at liquidation.
+    """
     gross_return = portfolio * inv_return_rate
-    # Dividends are taxed at marginal rate each year
-    if inv_return_rate > 0:
-        dividend_portion = dividend_yield / inv_return_rate
+    dividends = portfolio * dividend_yield
+
+    # Franking credit reduces effective tax on dividends
+    # Fully franked: effective rate = (marginal - corp_rate) / (1 - corp_rate)
+    # Partial franking blends franked and unfranked rates
+    corp_rate = 0.30
+    if marginal_rate > corp_rate:
+        franked_tax_rate = (marginal_rate - corp_rate) / (1 - corp_rate)
     else:
-        dividend_portion = 0
-    dividend_tax = gross_return * dividend_portion * marginal_rate
-    return portfolio + gross_return - dividend_tax
+        franked_tax_rate = 0.0
+    effective_div_rate = (
+        franking_rate * franked_tax_rate + (1 - franking_rate) * marginal_rate
+    )
+
+    dividend_tax = dividends * effective_div_rate
+    net_reinvested_dividends = dividends - dividend_tax
+
+    return portfolio + gross_return - dividend_tax, net_reinvested_dividends
 
 
 def simulate(params: ScenarioParams) -> list[YearSnapshot]:
@@ -113,7 +133,10 @@ def simulate(params: ScenarioParams) -> list[YearSnapshot]:
 
     # --- Initial state (year 0) ---
     stamp_duty = buy.get_stamp_duty()
-    upfront_buy_costs = buy.deposit + stamp_duty + buy.lmi
+    grant = 0.0
+    if buy.first_home_buyer:
+        grant = fhog(state=buy.state, new_build=buy.new_build, price=buy.purchase_price)
+    upfront_buy_costs = buy.deposit + stamp_duty + buy.lmi - grant
 
     # Calculate initial mortgage payment (may change if rates change)
     current_rate = buy.rate_for_year(1)
@@ -205,9 +228,11 @@ def simulate(params: ScenarioParams) -> list[YearSnapshot]:
         buy_cumulative += buy_year_costs
 
         # Grow buy-side investments
-        buy_investments = _grow_investments(
-            buy_investments, inv.return_rate, inv.dividend_yield, tax.marginal_rate
+        buy_investments, buy_reinvested_div = _grow_investments(
+            buy_investments, inv.return_rate, inv.dividend_yield,
+            tax.marginal_rate, inv.franking_rate,
         )
+        buy_contributions += buy_reinvested_div
 
         # --- Rent scenario ---
         annual_rent_cost = weekly_rent * 52
@@ -216,9 +241,11 @@ def simulate(params: ScenarioParams) -> list[YearSnapshot]:
         rent_cumulative += rent_year_costs
 
         # Grow rent-side investments
-        rent_investments = _grow_investments(
-            rent_investments, inv.return_rate, inv.dividend_yield, tax.marginal_rate
+        rent_investments, rent_reinvested_div = _grow_investments(
+            rent_investments, inv.return_rate, inv.dividend_yield,
+            tax.marginal_rate, inv.franking_rate,
         )
+        rent_contributions += rent_reinvested_div
 
         # --- Surplus investment (whoever pays less invests the difference) ---
         if buy_year_costs > rent_year_costs:

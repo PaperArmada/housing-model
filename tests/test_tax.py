@@ -82,6 +82,15 @@ class TestVICStampDuty:
         duty = calc_vic_stamp_duty(1_200_000)
         assert duty == pytest.approx(1_200_000 * 0.055, rel=1e-2)
 
+    def test_ppr_brackets(self):
+        # $300k: 25k*1.4% + 105k*2.4% + 170k*5% = 350 + 2520 + 8500 = $11,370
+        assert calc_vic_stamp_duty(300_000) == pytest.approx(11_370, rel=1e-2)
+
+    def test_above_440k_bracket(self):
+        # $750k: 25k*1.4% + 105k*2.4% + 310k*5% + 310k*6%
+        # = 350 + 2520 + 15500 + 18600 = $36,970
+        assert calc_vic_stamp_duty(750_000) == pytest.approx(36_970, rel=1e-2)
+
 
 class TestQLDStampDuty:
     def test_fhb_existing_exempt(self):

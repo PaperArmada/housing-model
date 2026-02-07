@@ -83,6 +83,7 @@ class InvestmentParams:
 
     return_rate: float = 0.07  # 7% p.a. nominal (equities index)
     dividend_yield: float = 0.02  # portion of return that's dividends (taxed annually)
+    franking_rate: float = 0.0  # proportion of dividends that are franked (0-1)
 
 
 @dataclass

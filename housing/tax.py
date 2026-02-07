@@ -91,18 +91,17 @@ def calc_vic_stamp_duty(
     if first_home_buyer and price <= 600_000:
         return 0.0
 
+    # VIC owner-occupier (PPR) rates
     brackets = [
         (25_000, 0.014),
         (130_000, 0.024),
+        (440_000, 0.05),
         (960_000, 0.06),
-        (2_000_000, 0.055),  # VIC has a quirk: 5.5% flat above $960k
-        (float("inf"), 0.065),
     ]
-    # VIC uses standard progressive below $960k
+    # VIC uses progressive below $960k, flat 5.5% of total above $960k
     if price <= 960_000:
         duty = _progressive_duty(price, brackets)
     else:
-        # Above $960k: flat 5.5% of total price
         duty = price * 0.055
 
     if first_home_buyer and price <= 750_000:
