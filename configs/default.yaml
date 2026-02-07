@@ -1,0 +1,33 @@
+# Default scenario: $800k Sydney house, 20% deposit, current rates
+buy:
+  purchase_price: 800000
+  deposit_pct: 0.20
+  mortgage_rate: 0.062
+  mortgage_term_years: 30
+  property_appreciation_rate: 0.05
+  state: NSW
+  first_home_buyer: false
+  new_build: false
+  council_rates_pct: 0.003
+  insurance_pct: 0.002
+  maintenance_pct: 0.01
+  water_rates_annual: 1200
+  strata_annual: 0
+  selling_agent_pct: 0.02
+  selling_legal: 2000
+
+rent:
+  weekly_rent: 650
+  rent_increase_rate: 0.04
+  renters_insurance_annual: 300
+
+investment:
+  return_rate: 0.07
+  dividend_yield: 0.02
+
+tax:
+  gross_income: 180000
+
+inflation_rate: 0.03
+time_horizon_years: 30
+existing_savings: 200000

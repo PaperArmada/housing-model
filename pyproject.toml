@@ -1,0 +1,15 @@
+[project]
+name = "housing-model"
+version = "0.1.0"
+description = "Australian housing expense model for net worth optimization"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["housing*"]
+
+[project.scripts]
+housing = "housing.cli:main"

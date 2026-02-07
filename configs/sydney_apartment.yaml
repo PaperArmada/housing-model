@@ -1,0 +1,27 @@
+# Sydney apartment with strata levies
+buy:
+  purchase_price: 650000
+  deposit_pct: 0.20
+  mortgage_rate: 0.062
+  mortgage_term_years: 30
+  property_appreciation_rate: 0.04  # apartments appreciate slower
+  state: NSW
+  first_home_buyer: false
+  strata_annual: 5000
+  maintenance_pct: 0.005  # lower for apartments (strata covers some)
+  water_rates_annual: 800  # lower for apartments
+
+rent:
+  weekly_rent: 550
+  rent_increase_rate: 0.04
+
+investment:
+  return_rate: 0.07
+  dividend_yield: 0.02
+
+tax:
+  gross_income: 150000
+
+inflation_rate: 0.03
+time_horizon_years: 30
+existing_savings: 180000
