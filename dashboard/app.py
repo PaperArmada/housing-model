@@ -563,8 +563,6 @@ with tab_data:
     )
 
 DOCS_DIR = Path(__file__).parent.parent / "docs"
-if not DOCS_DIR.exists():
-    DOCS_DIR = Path.cwd() / "docs"
 
 with tab_docs:
     docs = sorted(DOCS_DIR.glob("*.md")) if DOCS_DIR.exists() else []
