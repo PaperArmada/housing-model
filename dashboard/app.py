@@ -395,7 +395,7 @@ with tab_mc:
             runs_per_seed = stab_c2.slider(
                 "Runs per seed",
                 min_value=500,
-                max_value=5_000,
+                max_value=10_000,
                 value=1_000,
                 step=500,
                 key="stab_runs_per_seed",
