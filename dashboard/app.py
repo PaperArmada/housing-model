@@ -80,6 +80,55 @@ def cached_mc(params_dict: dict, n_runs: int, seed: int | None, **vol_overrides)
     return ts, summary
 
 
+@st.cache_data
+def cached_stability(
+    params_dict: dict, n_seeds: int, runs_per_seed: int, **vol_overrides
+) -> dict:
+    """Run MC with multiple random seeds and collect summary statistics."""
+    import numpy as np
+
+    params = dict_to_params(params_dict)
+    horizon = params.time_horizon_years
+    rng = np.random.default_rng(42)
+    seeds = rng.integers(1, 1_000_000, size=n_seeds).tolist()
+
+    med_diffs = []
+    prob_buy_wins = []
+    p10s = []
+    p90s = []
+    med_buy_nws = []
+    med_rent_nws = []
+    crossovers = []
+
+    for s in seeds:
+        config = MCConfig(n_runs=runs_per_seed, seed=s, **vol_overrides)
+        ts = mc_simulate(params, config)
+        summary = summarize(ts)
+        med_diffs.append(summary.diff_pctiles[50][horizon])
+        prob_buy_wins.append(summary.prob_buy_wins[horizon] * 100)
+        p10s.append(summary.diff_pctiles[10][horizon])
+        p90s.append(summary.diff_pctiles[90][horizon])
+        med_buy_nws.append(summary.buy_pctiles[50][horizon])
+        med_rent_nws.append(summary.rent_pctiles[50][horizon])
+        crossovers.append(summary.median_crossover)
+
+    def _stats(vals):
+        a = np.array(vals, dtype=float)
+        return float(np.mean(a)), float(np.std(a))
+
+    return {
+        "n_seeds": n_seeds,
+        "runs_per_seed": runs_per_seed,
+        "median_difference": _stats(med_diffs),
+        "prob_buy_wins": _stats(prob_buy_wins),
+        "p10_difference": _stats(p10s),
+        "p90_difference": _stats(p90s),
+        "median_buy_nw": _stats(med_buy_nws),
+        "median_rent_nw": _stats(med_rent_nws),
+        "crossover_years": [c for c in crossovers if c is not None],
+    }
+
+
 # --- Layout ---
 
 params = render_sidebar()
@@ -325,6 +374,97 @@ with tab_mc:
             "Where the distributions overlap, outcomes are similar. Dashed lines "
             "show the median for each scenario. Use the slider to explore different years."
         )
+
+        # --- Stability analysis ---
+        with st.expander("Stability Analysis"):
+            st.caption(
+                "Tests how stable the MC results are by running the simulation multiple "
+                "times with different random seeds. Low standard deviations mean the "
+                "results are reliable; high values suggest increasing the number of runs."
+            )
+            stab_c1, stab_c2 = st.columns(2)
+            n_seeds = stab_c1.slider(
+                "Number of seeds",
+                min_value=5,
+                max_value=50,
+                value=20,
+                step=5,
+                key="stab_n_seeds",
+                help="How many independent MC runs to perform.",
+            )
+            runs_per_seed = stab_c2.slider(
+                "Runs per seed",
+                min_value=500,
+                max_value=5_000,
+                value=1_000,
+                step=500,
+                key="stab_runs_per_seed",
+                help="Simulations per seed. Lower is faster; higher is more precise.",
+            )
+            if st.button("Run stability analysis", key="run_stability"):
+                vol_overrides = dict(
+                    std_property_appreciation=std_prop,
+                    std_investment_return=std_inv,
+                    std_rent_increase=std_rent,
+                    std_inflation=std_infl,
+                    std_mortgage_rate=std_mort,
+                )
+                with st.spinner(f"Running {n_seeds} seeds x {runs_per_seed} runs..."):
+                    result = cached_stability(
+                        params_dict, n_seeds, runs_per_seed, **vol_overrides
+                    )
+                st.session_state.stability_result = result
+
+            if "stability_result" in st.session_state:
+                result = st.session_state.stability_result
+
+                def _fmt_dollar(mean, std):
+                    return f"${mean:,.0f}  (\u00b1 ${std:,.0f})"
+
+                def _fmt_pct(mean, std):
+                    return f"{mean:.1f}%  (\u00b1 {std:.1f}%)"
+
+                st.markdown(
+                    f"**{result['n_seeds']} seeds \u00d7 "
+                    f"{result['runs_per_seed']:,} runs each**"
+                )
+
+                data = {
+                    "Metric": [
+                        "Median Difference (Buy - Rent)",
+                        "P(Buy wins)",
+                        "10th Percentile Difference",
+                        "90th Percentile Difference",
+                        "Median Buy Net Worth",
+                        "Median Rent Net Worth",
+                    ],
+                    "Mean": [
+                        f"${result['median_difference'][0]:,.0f}",
+                        f"{result['prob_buy_wins'][0]:.1f}%",
+                        f"${result['p10_difference'][0]:,.0f}",
+                        f"${result['p90_difference'][0]:,.0f}",
+                        f"${result['median_buy_nw'][0]:,.0f}",
+                        f"${result['median_rent_nw'][0]:,.0f}",
+                    ],
+                    "Std Dev": [
+                        f"${result['median_difference'][1]:,.0f}",
+                        f"{result['prob_buy_wins'][1]:.1f}%",
+                        f"${result['p10_difference'][1]:,.0f}",
+                        f"${result['p90_difference'][1]:,.0f}",
+                        f"${result['median_buy_nw'][1]:,.0f}",
+                        f"${result['median_rent_nw'][1]:,.0f}",
+                    ],
+                }
+                st.dataframe(data, use_container_width=True, hide_index=True)
+
+                xovers = result["crossover_years"]
+                if xovers:
+                    st.caption(
+                        f"Median crossover year appeared in {len(xovers)}/{result['n_seeds']} "
+                        f"seeds (range: {min(xovers)}-{max(xovers)})."
+                    )
+                else:
+                    st.caption("No median crossover year in any seed.")
     else:
         st.info(
             "Enable Monte Carlo simulation above to see probabilistic outcomes "
