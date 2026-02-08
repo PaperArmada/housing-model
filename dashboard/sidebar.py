@@ -16,6 +16,10 @@ from housing.params import (
 from housing.tax import marginal_rate
 
 CONFIGS_DIR = Path(__file__).parent.parent / "configs"
+if not CONFIGS_DIR.exists():
+    # Fallback for installed package (e.g. Streamlit Cloud) where __file__
+    # points into site-packages rather than the repo tree.
+    CONFIGS_DIR = Path.cwd() / "configs"
 
 PRESETS = {
     "Custom": None,
