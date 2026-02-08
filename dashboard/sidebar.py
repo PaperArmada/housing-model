@@ -4,6 +4,7 @@ import streamlit as st
 
 from configs import DIR as CONFIGS_DIR
 from housing.config import load_config
+from housing.lmi import estimate_lmi
 from housing.model import monthly_repayment
 from housing.params import (
     BuyParams,
@@ -27,33 +28,33 @@ PRESETS = {
 # Default values for all widget keys — used for first-run initialization
 # and as the baseline when no preset is loaded.
 _DEFAULTS = {
-    "buy_purchase_price": 1_550_000,
+    "buy_purchase_price": 450_000,
     "buy_deposit_pct": 20.0,
     "buy_state": "NSW",
     "buy_first_home": False,
     "buy_new_build": False,
-    "buy_appreciation": 5.0,
-    "buy_mortgage_rate": 6.2,
+    "buy_appreciation": 4.0,
+    "buy_mortgage_rate": 6.5,
     "buy_mortgage_term": 30,
     "buy_lmi": 0,
     "use_rate_schedule": False,
     "buy_council": 0.25,
     "buy_insurance": 0.15,
     "buy_maintenance": 1.0,
-    "buy_water": 1_200,
+    "buy_water": 600,
     "buy_strata": 0,
-    "buy_agent_pct": 2.0,
-    "buy_legal": 2_000,
-    "rent_weekly": 750,
-    "rent_increase": 4.0,
-    "rent_insurance": 300,
+    "buy_agent_pct": 2.5,
+    "buy_legal": 3_000,
+    "rent_weekly": 450,
+    "rent_increase": 3.5,
+    "rent_insurance": 200,
     "inv_return": 7.0,
     "inv_dividend": 2.0,
     "inv_franking": 0.0,
-    "tax_income": 180_000,
+    "tax_income": 75_000,
     "inflation": 3.0,
     "time_horizon": 30,
-    "existing_savings": 350_000,
+    "existing_savings": 100_000,
 }
 
 
@@ -86,7 +87,14 @@ def _apply_preset():
     # Mortgage
     st.session_state.buy_mortgage_rate = b.mortgage_rate * 100
     st.session_state.buy_mortgage_term = b.mortgage_term_years
-    st.session_state.buy_lmi = b.lmi
+    # Auto-calculate LMI if preset has <20% deposit and no explicit LMI
+    if b.lmi > 0:
+        st.session_state.buy_lmi = b.lmi
+    elif b.deposit_pct < 0.20:
+        lvr = 1 - b.deposit_pct
+        st.session_state.buy_lmi = estimate_lmi(b.loan_amount, lvr)
+    else:
+        st.session_state.buy_lmi = 0
 
     # Rate schedule
     if b.rate_schedule:
@@ -199,14 +207,27 @@ def render_sidebar() -> ScenarioParams:
             key="buy_mortgage_term",
             help="Loan repayment period.",
         )
+        # Auto-estimate LMI based on deposit and purchase price
+        lvr = 1 - deposit_pct / 100
+        loan_for_lmi = purchase_price * lvr
+        estimated_lmi = estimate_lmi(loan_for_lmi, lvr) if lvr > 0.80 else 0
+        st.session_state.buy_lmi = estimated_lmi
+
         lmi = st.number_input(
             "LMI ($)",
             min_value=0,
-            max_value=50_000,
+            max_value=100_000,
             step=500,
             key="buy_lmi",
-            help="Lenders Mortgage Insurance \u2014 typically required if deposit is below 20%.",
+            help="Lenders Mortgage Insurance \u2014 auto-estimated from deposit % and loan amount. Adjust if needed.",
         )
+        if lvr > 0.80:
+            st.caption(
+                f"Estimated LMI: ${estimated_lmi:,.0f} "
+                f"(LVR {lvr:.0%}, ${loan_for_lmi:,.0f} loan)"
+            )
+        elif lvr <= 0.80 and lmi > 0:
+            st.caption("LMI not required at 20%+ deposit.")
 
         # Variable rate schedule
         use_schedule = st.checkbox(

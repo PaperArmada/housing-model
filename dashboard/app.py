@@ -182,9 +182,16 @@ st.caption(
 st.divider()
 
 # --- Tabs ---
-tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_compare, tab_data, tab_docs = st.tabs(
-    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Compare", "Data", "Docs"]
-)
+tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_compare, tab_data, tab_docs = st.tabs([
+    ":material/trending_up: Net Worth",
+    ":material/payments: Housing Costs",
+    ":material/real_estate_agent: Equity & Debt",
+    ":material/casino: Monte Carlo",
+    ":material/tune: Sensitivity",
+    ":material/compare_arrows: Compare",
+    ":material/table_chart: Data",
+    ":material/menu_book: Docs",
+])
 
 with tab_nw:
     use_real = st.radio(
