@@ -43,6 +43,7 @@ from dashboard.charts import (
     net_worth_difference_chart,
     sensitivity_chart,
 )
+from dashboard.compare_tab import render_compare_tab
 from dashboard.formatters import sale_comparison_dataframe, snapshot_dataframe
 from dashboard.mc_charts import fan_chart, prob_buy_wins_chart, terminal_histogram
 from dashboard.sidebar import render_sidebar
@@ -182,8 +183,8 @@ st.caption(
 st.divider()
 
 # --- Tabs ---
-tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_data, tab_docs = st.tabs(
-    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Data", "Docs"]
+tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_compare, tab_data, tab_docs = st.tabs(
+    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Compare", "Data", "Docs"]
 )
 
 with tab_nw:
@@ -480,7 +481,7 @@ with tab_sens:
     )
     SWEEP_PARAMS = {
         "Mortgage Rate": ("buy.mortgage_rate", 0.03, 0.09, 0.005, True),
-        "Purchase Price": ("buy.purchase_price", 500_000, 1_500_000, 50_000, False),
+        "Purchase Price": ("buy.purchase_price", 500_000.0, 1_500_000.0, 50_000.0, False),
         "Property Appreciation": (
             "buy.property_appreciation_rate",
             0.02,
@@ -488,11 +489,11 @@ with tab_sens:
             0.005,
             True,
         ),
-        "Weekly Rent": ("rent.weekly_rent", 300, 1200, 50, False),
+        "Weekly Rent": ("rent.weekly_rent", 300.0, 1200.0, 50.0, False),
         "Rent Increase Rate": ("rent.rent_increase_rate", 0.02, 0.08, 0.005, True),
         "Investment Return": ("investment.return_rate", 0.04, 0.12, 0.005, True),
         "Deposit %": ("buy.deposit_pct", 0.05, 0.40, 0.05, True),
-        "Gross Income": ("tax.gross_income", 80_000, 300_000, 10_000, False),
+        "Gross Income": ("tax.gross_income", 80_000.0, 300_000.0, 10_000.0, False),
     }
 
     selected = st.selectbox(
@@ -533,6 +534,9 @@ with tab_sens:
             st.caption(
                 f"Crossover year range: {min(crossovers)} - {max(crossovers)}"
             )
+
+with tab_compare:
+    render_compare_tab(params, params_dict)
 
 with tab_data:
     st.subheader("Year-by-Year Breakdown")

@@ -72,6 +72,15 @@ def dict_to_params(data: dict) -> ScenarioParams:
     return ScenarioParams(buy=buy, rent=rent_params, investment=inv, tax=tax, **top)
 
 
+def parse_config_text(text: str) -> ScenarioParams:
+    """Parse YAML or JSON text into ScenarioParams."""
+    if HAS_YAML:
+        data = yaml.safe_load(text)
+    else:
+        data = json.loads(text)
+    return dict_to_params(data)
+
+
 def params_to_dict(params: ScenarioParams) -> dict:
     """Convert ScenarioParams to a serialisable dict."""
     from dataclasses import asdict
