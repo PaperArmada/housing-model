@@ -160,20 +160,25 @@ def terminal_histogram(ts: MCTimeSeries, year: int) -> go.Figure:
     buy_vals = ts.buy_net_worth[year]
     rent_vals = ts.rent_net_worth[year]
 
+    # Shared bin edges so both histograms are directly comparable
+    all_vals = np.concatenate([buy_vals, rent_vals])
+    bin_size = (np.max(all_vals) - np.min(all_vals)) / 50
+    shared_bins = dict(start=np.min(all_vals), end=np.max(all_vals), size=bin_size)
+
     fig = go.Figure()
 
     fig.add_trace(go.Histogram(
         x=buy_vals,
         name="Buy",
         marker_color="rgba(33,150,243,0.6)",
-        nbinsx=50,
+        xbins=shared_bins,
         hovertemplate="$%{x:,.0f}<br>Count: %{y}<extra>Buy</extra>",
     ))
     fig.add_trace(go.Histogram(
         x=rent_vals,
         name="Rent",
         marker_color="rgba(255,152,0,0.6)",
-        nbinsx=50,
+        xbins=shared_bins,
         hovertemplate="$%{x:,.0f}<br>Count: %{y}<extra>Rent</extra>",
     ))
 
