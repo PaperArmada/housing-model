@@ -15,7 +15,11 @@ dev = ["pytest>=8.0"]
 dashboard = ["streamlit>=1.38", "plotly>=5.18", "pyyaml>=6.0", "numpy>=1.26"]
 
 [tool.setuptools.packages.find]
-include = ["housing*", "dashboard*"]
+include = ["housing*", "dashboard*", "configs", "docs"]
+
+[tool.setuptools.package-data]
+configs = ["*.yaml", "*.json"]
+docs = ["*.md"]
 
 [project.scripts]
 housing = "housing.cli:main"

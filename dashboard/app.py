@@ -1,7 +1,5 @@
 """Streamlit dashboard for the Australian housing buy-vs-rent model."""
 
-from pathlib import Path
-
 import streamlit as st
 
 st.set_page_config(
@@ -43,6 +41,7 @@ from dashboard.charts import (
     net_worth_difference_chart,
     sensitivity_chart,
 )
+from docs import DIR as DOCS_DIR
 from dashboard.compare_tab import render_compare_tab
 from dashboard.formatters import sale_comparison_dataframe, snapshot_dataframe
 from dashboard.mc_charts import fan_chart, prob_buy_wins_chart, terminal_histogram
@@ -562,7 +561,6 @@ with tab_data:
         "Download Full Data (CSV)", csv_data, "housing_model.csv", "text/csv"
     )
 
-DOCS_DIR = Path(__file__).parent.parent / "docs"
 
 with tab_docs:
     docs = sorted(DOCS_DIR.glob("*.md")) if DOCS_DIR.exists() else []

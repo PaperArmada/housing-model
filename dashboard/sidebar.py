@@ -1,9 +1,8 @@
 """Sidebar controls for the housing model dashboard."""
 
-from pathlib import Path
-
 import streamlit as st
 
+from configs import DIR as CONFIGS_DIR
 from housing.config import load_config
 from housing.model import monthly_repayment
 from housing.params import (
@@ -14,8 +13,6 @@ from housing.params import (
     TaxParams,
 )
 from housing.tax import marginal_rate
-
-CONFIGS_DIR = Path(__file__).parent.parent / "configs"
 
 PRESETS = {
     "Custom": None,
