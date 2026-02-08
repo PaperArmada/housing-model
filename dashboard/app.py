@@ -1,5 +1,7 @@
 """Streamlit dashboard for the Australian housing buy-vs-rent model."""
 
+from pathlib import Path
+
 import streamlit as st
 
 st.set_page_config(
@@ -102,8 +104,8 @@ m7.metric(
 st.divider()
 
 # --- Tabs ---
-tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_data = st.tabs(
-    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Data"]
+tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_data, tab_docs = st.tabs(
+    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Data", "Docs"]
 )
 
 with tab_nw:
@@ -321,3 +323,16 @@ with tab_data:
     st.download_button(
         "Download Full Data (CSV)", csv_data, "housing_model.csv", "text/csv"
     )
+
+DOCS_DIR = Path(__file__).parent.parent / "docs"
+
+with tab_docs:
+    docs = sorted(DOCS_DIR.glob("*.md")) if DOCS_DIR.exists() else []
+    if not docs:
+        st.info("No documentation files found in docs/.")
+    else:
+        doc_names = {d.stem.replace("_", " ").title(): d for d in docs}
+        selected_doc = st.selectbox(
+            "Document", list(doc_names.keys()), key="docs_selector"
+        )
+        st.markdown(doc_names[selected_doc].read_text())

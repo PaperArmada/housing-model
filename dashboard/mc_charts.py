@@ -13,6 +13,9 @@ def fan_chart(
 ) -> go.Figure:
     """Fan chart with percentile bands and median line.
 
+    Shows p10, p25, p50, p75, p90 values on hover using individual traces
+    with fill="tonexty" for shaded bands.
+
     metric: 'buy', 'rent', or 'difference'
     """
     pctiles = {
@@ -22,46 +25,93 @@ def fan_chart(
     }[metric]
 
     colors = {
-        "buy": {"band_outer": "rgba(33,150,243,0.15)", "band_inner": "rgba(33,150,243,0.3)", "line": "#2196F3"},
-        "rent": {"band_outer": "rgba(255,152,0,0.15)", "band_inner": "rgba(255,152,0,0.3)", "line": "#FF9800"},
-        "difference": {"band_outer": "rgba(76,175,80,0.15)", "band_inner": "rgba(76,175,80,0.3)", "line": "#4CAF50"},
+        "buy": {
+            "band_outer": "rgba(33,150,243,0.15)",
+            "band_inner": "rgba(33,150,243,0.3)",
+            "line": "#2196F3",
+            "boundary": "rgba(33,150,243,0.4)",
+        },
+        "rent": {
+            "band_outer": "rgba(255,152,0,0.15)",
+            "band_inner": "rgba(255,152,0,0.3)",
+            "line": "#FF9800",
+            "boundary": "rgba(255,152,0,0.4)",
+        },
+        "difference": {
+            "band_outer": "rgba(76,175,80,0.15)",
+            "band_inner": "rgba(76,175,80,0.3)",
+            "line": "#4CAF50",
+            "boundary": "rgba(76,175,80,0.4)",
+        },
     }[metric]
 
     years = summary.years
     fig = go.Figure()
 
-    # Outer band: p10-p90
-    if 10 in pctiles and 90 in pctiles:
+    # Build traces bottom-to-top so fill="tonexty" creates correct bands:
+    #   p10 → p25 (outer lower) → p75 (inner) → p90 (outer upper)
+    # Then p50 median on top.
+
+    boundary_line = dict(width=0.5, color=colors["boundary"], dash="dot")
+
+    # p10 — bottom boundary
+    if 10 in pctiles:
         fig.add_trace(go.Scatter(
-            x=np.concatenate([years, years[::-1]]),
-            y=np.concatenate([pctiles[90], pctiles[10][::-1]]),
-            fill="toself",
+            x=years,
+            y=pctiles[10],
+            name="p10",
+            line=boundary_line,
+            hovertemplate="$%{y:,.0f}",
+            showlegend=False,
+        ))
+
+    # p25 — fills down to p10 (outer band)
+    if 25 in pctiles:
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=pctiles[25],
+            name="p25",
+            line=boundary_line,
+            fill="tonexty",
             fillcolor=colors["band_outer"],
-            line=dict(width=0),
-            name="10th-90th percentile",
-            hoverinfo="skip",
+            hovertemplate="$%{y:,.0f}",
+            showlegend=False,
         ))
 
-    # Inner band: p25-p75
-    if 25 in pctiles and 75 in pctiles:
+    # p75 — fills down to p25 (inner band)
+    if 75 in pctiles:
         fig.add_trace(go.Scatter(
-            x=np.concatenate([years, years[::-1]]),
-            y=np.concatenate([pctiles[75], pctiles[25][::-1]]),
-            fill="toself",
+            x=years,
+            y=pctiles[75],
+            name="p75",
+            line=boundary_line,
+            fill="tonexty",
             fillcolor=colors["band_inner"],
-            line=dict(width=0),
-            name="25th-75th percentile",
-            hoverinfo="skip",
+            hovertemplate="$%{y:,.0f}",
+            showlegend=False,
         ))
 
-    # Median line
+    # p90 — fills down to p75 (outer band)
+    if 90 in pctiles:
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=pctiles[90],
+            name="p90",
+            line=boundary_line,
+            fill="tonexty",
+            fillcolor=colors["band_outer"],
+            hovertemplate="$%{y:,.0f}",
+            showlegend=False,
+        ))
+
+    # Median line (on top, prominent)
     if 50 in pctiles:
         fig.add_trace(go.Scatter(
             x=years,
             y=pctiles[50],
             name="Median",
             line=dict(color=colors["line"], width=2.5),
-            hovertemplate="Year %{x}<br>Median: $%{y:,.0f}<extra></extra>",
+            hovertemplate="$%{y:,.0f}",
         ))
 
     if metric == "difference":
@@ -127,13 +177,17 @@ def terminal_histogram(ts: MCTimeSeries, year: int) -> go.Figure:
         hovertemplate="$%{x:,.0f}<br>Count: %{y}<extra>Rent</extra>",
     ))
 
-    # Median lines
+    # Median lines — offset annotations vertically so they don't overlap
     buy_med = np.median(buy_vals)
     rent_med = np.median(rent_vals)
     fig.add_vline(x=buy_med, line_dash="dash", line_color="#2196F3",
-                  annotation_text=f"Buy median: ${buy_med:,.0f}")
+                  annotation_text=f"Buy median: ${buy_med:,.0f}",
+                  annotation_position="top right",
+                  annotation_yshift=0)
     fig.add_vline(x=rent_med, line_dash="dash", line_color="#FF9800",
-                  annotation_text=f"Rent median: ${rent_med:,.0f}")
+                  annotation_text=f"Rent median: ${rent_med:,.0f}",
+                  annotation_position="top right",
+                  annotation_yshift=-20)
 
     fig.update_layout(
         barmode="overlay",
