@@ -16,7 +16,7 @@ from housing.params import (
 from housing.tax import marginal_rate
 
 PRESETS = {
-    "Custom": None,
+    "Default": None,
     "Sydney House": "default.yaml",
     "Sydney Apartment": "sydney_apartment.yaml",
     "Melbourne House": "melbourne_house.yaml",
@@ -60,9 +60,20 @@ _DEFAULTS = {
 
 def _init_defaults():
     """Set default session state values on first run only."""
+    first_run = "buy_purchase_price" not in st.session_state
     for key, val in _DEFAULTS.items():
         if key not in st.session_state:
             st.session_state[key] = val
+    if first_run:
+        _snapshot_preset("Default")
+
+
+def _snapshot_preset(name: str) -> None:
+    """Save current widget values as the preset snapshot for change detection."""
+    st.session_state._preset_name = name
+    st.session_state._preset_snapshot = {
+        k: st.session_state.get(k) for k in _DEFAULTS
+    }
 
 
 def _apply_preset():
@@ -70,6 +81,10 @@ def _apply_preset():
     name = st.session_state.preset_selector
     filename = PRESETS.get(name)
     if filename is None:
+        # "Default" — reset to defaults
+        for key, val in _DEFAULTS.items():
+            st.session_state[key] = val
+        _snapshot_preset(name)
         return
     params = load_config(CONFIGS_DIR / filename)
     b = params.buy
@@ -133,6 +148,8 @@ def _apply_preset():
     st.session_state.time_horizon = params.time_horizon_years
     st.session_state.existing_savings = params.existing_savings
 
+    _snapshot_preset(name)
+
 
 def render_sidebar() -> ScenarioParams:
     """Render all sidebar controls and return constructed ScenarioParams."""
@@ -146,6 +163,17 @@ def render_sidebar() -> ScenarioParams:
         key="preset_selector",
         on_change=_apply_preset,
     )
+
+    # Show modification indicator (exclude buy_lmi since it's auto-derived)
+    snapshot = st.session_state.get("_preset_snapshot")
+    preset_name = st.session_state.get("_preset_name")
+    if snapshot and preset_name:
+        changed = [
+            k for k in _DEFAULTS
+            if k != "buy_lmi" and st.session_state.get(k) != snapshot.get(k)
+        ]
+        if changed:
+            st.sidebar.caption(f"Modified from {preset_name} ({len(changed)} change{'s' if len(changed) != 1 else ''})")
 
     # --- Property ---
     with st.sidebar.expander("Property", expanded=True):
