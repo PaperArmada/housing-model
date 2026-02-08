@@ -1,5 +1,12 @@
 """Streamlit dashboard for the Australian housing buy-vs-rent model."""
 
+import sys
+from pathlib import Path
+
+# Ensure the repo root is on sys.path so housing, configs, and docs
+# are importable without installing the project as a package.
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import streamlit as st
 
 st.set_page_config(
