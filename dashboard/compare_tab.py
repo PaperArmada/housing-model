@@ -170,7 +170,7 @@ def render_compare_tab(current_params: ScenarioParams, current_params_dict: dict
 
         st.plotly_chart(
             comparison_difference_chart(scenario_data, real=use_real),
-            use_container_width=True,
+            width="stretch",
         )
         st.caption(
             "Buy-minus-Rent net worth difference for each scenario. Lines above zero favour buying; "
@@ -179,7 +179,7 @@ def render_compare_tab(current_params: ScenarioParams, current_params_dict: dict
 
         st.plotly_chart(
             comparison_net_worth_chart(scenario_data, real=use_real),
-            use_container_width=True,
+            width="stretch",
         )
         st.caption(
             "Buy (solid) and Rent (dashed) net worth lines overlaid. Same colour = same scenario. "
@@ -211,7 +211,7 @@ def render_compare_tab(current_params: ScenarioParams, current_params_dict: dict
         dollar_fmt = st.column_config.NumberColumn(format="dollar")
         st.dataframe(
             rows,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             column_config={
                 "Purchase Price": dollar_fmt,

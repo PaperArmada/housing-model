@@ -24,7 +24,7 @@ def _show_disclaimer():
         "that may not reflect your actual situation. Always consult a qualified "
         "financial adviser before making property or investment decisions."
     )
-    if st.button("I understand", use_container_width=True):
+    if st.button("I understand", width="stretch"):
         st.session_state.disclaimer_accepted = True
         st.rerun()
 
@@ -209,7 +209,7 @@ with tab_nw:
     ).startswith("Real")
 
     st.plotly_chart(
-        net_worth_chart(snapshots, real=use_real), use_container_width=True
+        net_worth_chart(snapshots, real=use_real), width="stretch"
     )
     st.caption(
         "Total net worth over time for each scenario. Buy net worth = property value "
@@ -218,7 +218,7 @@ with tab_nw:
     )
     st.plotly_chart(
         net_worth_difference_chart(snapshots, real=use_real),
-        use_container_width=True,
+        width="stretch",
     )
     st.caption(
         "The gap between buy and rent net worth each year. Positive values mean buying is "
@@ -227,13 +227,13 @@ with tab_nw:
     )
 
 with tab_costs:
-    st.plotly_chart(housing_costs_chart(snapshots), use_container_width=True)
+    st.plotly_chart(housing_costs_chart(snapshots), width="stretch")
     st.caption(
         "Annual housing costs for each scenario. Buy includes mortgage repayments, "
         "council rates, insurance, maintenance, water, and strata. Rent includes "
         "weekly rent and renters insurance. Both increase with inflation over time."
     )
-    st.plotly_chart(cumulative_costs_chart(snapshots), use_container_width=True)
+    st.plotly_chart(cumulative_costs_chart(snapshots), width="stretch")
     st.caption(
         "Total cumulative amount spent on housing from year 0 to each year. "
         "This shows the running total of all cash outlays — note that mortgage "
@@ -241,7 +241,7 @@ with tab_costs:
     )
 
 with tab_equity:
-    st.plotly_chart(equity_buildup_chart(snapshots), use_container_width=True)
+    st.plotly_chart(equity_buildup_chart(snapshots), width="stretch")
     st.caption(
         "Tracks the buyer's property equity (property value minus mortgage balance), "
         "the remaining mortgage balance, and the renter's investment portfolio. "
@@ -334,7 +334,7 @@ with tab_mc:
         # Fan charts
         st.plotly_chart(
             fan_chart(summary, "difference", "Net Worth Difference (Buy - Rent)"),
-            use_container_width=True,
+            width="stretch",
         )
         st.caption(
             "Fan chart showing the range of buy-minus-rent outcomes across all simulations. "
@@ -346,7 +346,7 @@ with tab_mc:
         with fc1:
             st.plotly_chart(
                 fan_chart(summary, "buy", "Buy Net Worth"),
-                use_container_width=True,
+                width="stretch",
             )
             st.caption(
                 "Distribution of buy-scenario net worth across simulations. Wider bands "
@@ -355,7 +355,7 @@ with tab_mc:
         with fc2:
             st.plotly_chart(
                 fan_chart(summary, "rent", "Rent Net Worth"),
-                use_container_width=True,
+                width="stretch",
             )
             st.caption(
                 "Distribution of rent-scenario net worth. Typically wider than buy because "
@@ -364,7 +364,7 @@ with tab_mc:
 
         # Probability chart
         st.plotly_chart(
-            prob_buy_wins_chart(summary), use_container_width=True
+            prob_buy_wins_chart(summary), width="stretch"
         )
         st.caption(
             "The percentage of simulations where buying has a higher net worth than renting "
@@ -381,7 +381,7 @@ with tab_mc:
             key="mc_hist_year",
         )
         st.plotly_chart(
-            terminal_histogram(ts, hist_year), use_container_width=True
+            terminal_histogram(ts, hist_year), width="stretch"
         )
         st.caption(
             "Overlaid histograms of buy and rent net worth at the selected year. "
@@ -469,7 +469,7 @@ with tab_mc:
                         f"${result['median_rent_nw'][1]:,.0f}",
                     ],
                 }
-                st.dataframe(data, use_container_width=True, hide_index=True)
+                st.dataframe(data, width="stretch", hide_index=True)
 
                 xovers = result["crossover_years"]
                 if xovers:
@@ -539,7 +539,7 @@ with tab_sens:
     if values:
         results = cached_sweep(params_dict, param_path, tuple(values))
         st.plotly_chart(
-            sensitivity_chart(results, selected, is_pct), use_container_width=True
+            sensitivity_chart(results, selected, is_pct), width="stretch"
         )
 
         crossovers = [r.crossover for r in results if r.crossover is not None]
@@ -558,7 +558,7 @@ with tab_data:
         "mortgage balance, investment portfolio, annual costs, and net worth in both "
         "nominal and real (inflation-adjusted) terms."
     )
-    st.dataframe(snapshot_dataframe(snapshots), use_container_width=True, height=400)
+    st.dataframe(snapshot_dataframe(snapshots), width="stretch", height=400)
 
     st.subheader("After-Tax Liquidation at Key Years")
     st.caption(
@@ -567,7 +567,7 @@ with tab_data:
         "tax with the 50% discount, and inflation adjustment."
     )
     st.dataframe(
-        sale_comparison_dataframe(snapshots, params), use_container_width=True
+        sale_comparison_dataframe(snapshots, params), width="stretch"
     )
 
     csv_data = to_csv(snapshots)
