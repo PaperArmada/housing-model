@@ -10,6 +10,24 @@ st.set_page_config(
     layout="wide",
 )
 
+@st.dialog("Disclaimer")
+def _show_disclaimer():
+    st.markdown(
+        "This tool is for **educational and informational purposes only**. "
+        "It is not financial advice.\n\n"
+        "The model makes simplifying assumptions and uses estimated parameters "
+        "that may not reflect your actual situation. Always consult a qualified "
+        "financial adviser before making property or investment decisions."
+    )
+    if st.button("I understand", use_container_width=True):
+        st.session_state.disclaimer_accepted = True
+        st.rerun()
+
+
+if not st.session_state.get("disclaimer_accepted", False):
+    _show_disclaimer()
+    st.stop()
+
 from housing.config import dict_to_params, params_to_dict
 from housing.mc_params import MCConfig
 from housing.model import simulate, net_worth_at_sale
