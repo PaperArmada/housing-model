@@ -1,23 +1,23 @@
-# Sydney 2BR apartment - inner/middle ring (e.g., Marrickville, Burwood, Mascot)
+# Melbourne 2BR apartment - inner/middle ring (e.g., Richmond, Brunswick, Footscray)
 buy:
-  purchase_price: 850000
+  purchase_price: 600000
   deposit_pct: 0.20
   mortgage_rate: 0.062
   mortgage_term_years: 30
-  property_appreciation_rate: 0.035
-  state: NSW
+  property_appreciation_rate: 0.03
+  state: VIC
   first_home_buyer: false
   new_build: false
   council_rates_pct: 0.002
   insurance_pct: 0.001
   maintenance_pct: 0.005
-  water_rates_annual: 800
-  strata_annual: 5500
+  water_rates_annual: 750
+  strata_annual: 4500
   selling_agent_pct: 0.02
   selling_legal: 2000
 
 rent:
-  weekly_rent: 650
+  weekly_rent: 500
   rent_increase_rate: 0.045
   renters_insurance_annual: 300
 
@@ -26,8 +26,8 @@ investment:
   dividend_yield: 0.02
 
 tax:
-  gross_income: 150000
+  gross_income: 140000
 
 inflation_rate: 0.03
 time_horizon_years: 30
-existing_savings: 200000
+existing_savings: 160000

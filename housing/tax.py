@@ -212,19 +212,21 @@ def calc_cgt(
 # First Home Owner Grant
 # ---------------------------------------------------------------------------
 
-FHOG_AMOUNTS = {
-    "NSW": 10_000,  # new homes only
-    "VIC": 10_000,  # new homes only
-    "QLD": 30_000,  # new homes only, up to $750k
+FHOG_AMOUNTS: dict[str, tuple[int, int]] = {
+    "NSW": (10_000, 600_000),   # (grant, price_cap) — new homes only
+    "VIC": (10_000, 750_000),   # new homes only
+    "QLD": (30_000, 750_000),   # new homes only
 }
 
 
 def fhog(state: str = "NSW", new_build: bool = False, price: float = 0) -> float:
-    """First Home Owner Grant amount (new builds only)."""
+    """First Home Owner Grant amount (new builds only, subject to price caps)."""
     if not new_build:
         return 0.0
-    amount = FHOG_AMOUNTS.get(state.upper(), 0)
-    # QLD has a price cap
-    if state.upper() == "QLD" and price > 750_000:
+    entry = FHOG_AMOUNTS.get(state.upper())
+    if entry is None:
+        return 0.0
+    amount, price_cap = entry
+    if price > 0 and price > price_cap:
         return 0.0
     return amount

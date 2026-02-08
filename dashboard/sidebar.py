@@ -19,9 +19,10 @@ CONFIGS_DIR = Path(__file__).parent.parent / "configs"
 
 PRESETS = {
     "Custom": None,
-    "Default (Sydney $800k)": "default.yaml",
-    "Melbourne House": "melbourne_house.yaml",
+    "Sydney House": "default.yaml",
     "Sydney Apartment": "sydney_apartment.yaml",
+    "Melbourne House": "melbourne_house.yaml",
+    "Melbourne Apartment": "melbourne_apartment.yaml",
     "Brisbane First Home": "brisbane_first_home.yaml",
     "Rate Drop Scenario": "rate_drop_scenario.yaml",
 }
@@ -29,7 +30,7 @@ PRESETS = {
 # Default values for all widget keys — used for first-run initialization
 # and as the baseline when no preset is loaded.
 _DEFAULTS = {
-    "buy_purchase_price": 800_000,
+    "buy_purchase_price": 1_550_000,
     "buy_deposit_pct": 20.0,
     "buy_state": "NSW",
     "buy_first_home": False,
@@ -39,14 +40,14 @@ _DEFAULTS = {
     "buy_mortgage_term": 30,
     "buy_lmi": 0,
     "use_rate_schedule": False,
-    "buy_council": 0.3,
-    "buy_insurance": 0.2,
+    "buy_council": 0.25,
+    "buy_insurance": 0.15,
     "buy_maintenance": 1.0,
     "buy_water": 1_200,
     "buy_strata": 0,
     "buy_agent_pct": 2.0,
     "buy_legal": 2_000,
-    "rent_weekly": 650,
+    "rent_weekly": 750,
     "rent_increase": 4.0,
     "rent_insurance": 300,
     "inv_return": 7.0,
@@ -55,7 +56,7 @@ _DEFAULTS = {
     "tax_income": 180_000,
     "inflation": 3.0,
     "time_horizon": 30,
-    "existing_savings": 200_000,
+    "existing_savings": 350_000,
 }
 
 
@@ -149,6 +150,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=5_000_000,
             step=25_000,
             key="buy_purchase_price",
+            help="Total purchase price of the property.",
         )
         deposit_pct = st.slider(
             "Deposit (%)",
@@ -156,19 +158,32 @@ def render_sidebar() -> ScenarioParams:
             max_value=50.0,
             step=1.0,
             key="buy_deposit_pct",
+            help="Percentage of purchase price paid upfront. Below 20% typically requires LMI.",
         )
         state = st.selectbox(
-            "State", options=["NSW", "VIC", "QLD"], key="buy_state"
+            "State",
+            options=["NSW", "VIC", "QLD"],
+            key="buy_state",
+            help="Australian state \u2014 determines stamp duty rates and first home buyer concessions.",
         )
         col1, col2 = st.columns(2)
-        first_home = col1.checkbox("First Home Buyer", key="buy_first_home")
-        new_build = col2.checkbox("New Build", key="buy_new_build")
+        first_home = col1.checkbox(
+            "First Home Buyer",
+            key="buy_first_home",
+            help="Eligible for stamp duty concessions and First Home Owner Grant (FHOG) in most states.",
+        )
+        new_build = col2.checkbox(
+            "New Build",
+            key="buy_new_build",
+            help="New constructions may qualify for the First Home Owner Grant.",
+        )
         appreciation = st.slider(
             "Property Appreciation (% p.a.)",
             min_value=0.0,
             max_value=10.0,
             step=0.5,
             key="buy_appreciation",
+            help="Expected annual growth in property value. Historical Aus average ~5-7% nominal.",
         )
 
     # --- Mortgage ---
@@ -179,19 +194,28 @@ def render_sidebar() -> ScenarioParams:
             max_value=12.0,
             step=0.1,
             key="buy_mortgage_rate",
+            help="Annual interest rate on the home loan. Current Aus rates ~6-7% (2025).",
         )
         mortgage_term = st.select_slider(
             "Mortgage Term (years)",
             options=[15, 20, 25, 30],
             key="buy_mortgage_term",
+            help="Loan repayment period.",
         )
         lmi = st.number_input(
-            "LMI ($)", min_value=0, max_value=50_000, step=500, key="buy_lmi"
+            "LMI ($)",
+            min_value=0,
+            max_value=50_000,
+            step=500,
+            key="buy_lmi",
+            help="Lenders Mortgage Insurance \u2014 typically required if deposit is below 20%.",
         )
 
         # Variable rate schedule
         use_schedule = st.checkbox(
-            "Enable variable rate schedule", key="use_rate_schedule"
+            "Enable variable rate schedule",
+            key="use_rate_schedule",
+            help="Model rate changes over time (e.g., rate cuts expected in future).",
         )
         rate_schedule = None
         if use_schedule:
@@ -238,6 +262,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=1.0,
             step=0.05,
             key="buy_council",
+            help="Annual council/municipal rates as a percentage of property value. Varies by LGA.",
         )
         insurance = st.slider(
             "Insurance (% of value)",
@@ -245,6 +270,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=1.0,
             step=0.05,
             key="buy_insurance",
+            help="Annual building insurance as a percentage of property value.",
         )
         maintenance = st.slider(
             "Maintenance (% of value)",
@@ -252,6 +278,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=3.0,
             step=0.1,
             key="buy_maintenance",
+            help="Annual maintenance budget as a percentage of property value. Rule of thumb: 1% of value.",
         )
         water = st.number_input(
             "Water Rates ($/yr)",
@@ -259,6 +286,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=5_000,
             step=100,
             key="buy_water",
+            help="Annual water/sewerage charges. Fixed amount, inflates annually.",
         )
         strata = st.number_input(
             "Strata ($/yr)",
@@ -266,6 +294,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=20_000,
             step=500,
             key="buy_strata",
+            help="Annual strata/body corporate levies. Zero for standalone houses, $3k-8k+ for apartments.",
         )
 
     # --- Selling Costs ---
@@ -276,6 +305,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=5.0,
             step=0.1,
             key="buy_agent_pct",
+            help="Real estate agent commission on eventual sale. Typical: 1.5-2.5%.",
         )
         selling_legal = st.number_input(
             "Legal Costs ($)",
@@ -283,6 +313,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=10_000,
             step=500,
             key="buy_legal",
+            help="Conveyancing and legal fees for selling.",
         )
 
     # --- Rent ---
@@ -293,6 +324,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=3_000,
             step=25,
             key="rent_weekly",
+            help="Current weekly rent for a comparable property.",
         )
         rent_increase = st.slider(
             "Rent Increase (% p.a.)",
@@ -300,6 +332,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=10.0,
             step=0.5,
             key="rent_increase",
+            help="Expected annual rent increase. Historical Aus average ~3-5%.",
         )
         renters_ins = st.number_input(
             "Renters Insurance ($/yr)",
@@ -307,6 +340,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=2_000,
             step=50,
             key="rent_insurance",
+            help="Annual contents insurance for renters.",
         )
 
     # --- Investment & Tax ---
@@ -317,6 +351,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=15.0,
             step=0.5,
             key="inv_return",
+            help="Expected nominal annual return on share investments. ASX long-term ~7-10%.",
         )
         div_yield = st.slider(
             "Dividend Yield (% p.a.)",
@@ -324,6 +359,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=5.0,
             step=0.5,
             key="inv_dividend",
+            help="Portion of investment return paid as dividends (taxed annually). ASX average ~3-4%.",
         )
         franking = st.slider(
             "Franking Rate (%)",
@@ -331,8 +367,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=100.0,
             step=10.0,
             key="inv_franking",
-            help="Proportion of dividends with franking credits. "
-            "~60% for Aus equity ETFs, 0% for international.",
+            help="Proportion of dividends that carry franking credits. ~60% for Aus equity ETFs, 0% for international.",
         )
         gross_income = st.number_input(
             "Gross Income ($/yr)",
@@ -340,6 +375,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=1_000_000,
             step=5_000,
             key="tax_income",
+            help="Annual gross salary \u2014 used to calculate marginal tax rate for dividend tax and CGT.",
         )
         marg = marginal_rate(gross_income)
         st.caption(f"Marginal tax rate: {marg:.0%} (incl. Medicare)")
@@ -352,6 +388,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=8.0,
             step=0.5,
             key="inflation",
+            help="Expected annual CPI inflation. RBA targets 2-3%.",
         )
         horizon = st.slider(
             "Time Horizon (years)",
@@ -359,6 +396,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=40,
             step=1,
             key="time_horizon",
+            help="How many years to project the comparison.",
         )
         savings = st.number_input(
             "Existing Savings ($)",
@@ -366,6 +404,7 @@ def render_sidebar() -> ScenarioParams:
             max_value=2_000_000,
             step=10_000,
             key="existing_savings",
+            help="Total savings available today \u2014 used for deposit (buy) or invested (rent).",
         )
 
     # --- Build params ---

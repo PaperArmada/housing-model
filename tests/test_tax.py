@@ -145,11 +145,24 @@ class TestFHOG:
     def test_no_grant_for_existing(self):
         assert fhog("NSW", new_build=False) == 0
 
-    def test_nsw_new_build(self):
-        assert fhog("NSW", new_build=True) == 10_000
+    def test_nsw_new_build_under_cap(self):
+        assert fhog("NSW", new_build=True, price=500_000) == 10_000
+
+    def test_nsw_over_cap(self):
+        assert fhog("NSW", new_build=True, price=700_000) == 0
+
+    def test_vic_new_build_under_cap(self):
+        assert fhog("VIC", new_build=True, price=700_000) == 10_000
+
+    def test_vic_over_cap(self):
+        assert fhog("VIC", new_build=True, price=800_000) == 0
 
     def test_qld_new_build(self):
         assert fhog("QLD", new_build=True, price=600_000) == 30_000
 
     def test_qld_over_cap(self):
         assert fhog("QLD", new_build=True, price=800_000) == 0
+
+    def test_no_price_given(self):
+        # When price=0 (default), grant is given (no cap check)
+        assert fhog("NSW", new_build=True) == 10_000

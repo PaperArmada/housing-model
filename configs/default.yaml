@@ -1,6 +1,6 @@
-# Default scenario: $800k Sydney house, 20% deposit, current rates
+# Sydney middle-ring house (e.g., Epping, Ryde, Hurstville)
 buy:
-  purchase_price: 800000
+  purchase_price: 1550000
   deposit_pct: 0.20
   mortgage_rate: 0.062
   mortgage_term_years: 30
@@ -8,8 +8,8 @@ buy:
   state: NSW
   first_home_buyer: false
   new_build: false
-  council_rates_pct: 0.003
-  insurance_pct: 0.002
+  council_rates_pct: 0.0025
+  insurance_pct: 0.0015
   maintenance_pct: 0.01
   water_rates_annual: 1200
   strata_annual: 0
@@ -17,7 +17,7 @@ buy:
   selling_legal: 2000
 
 rent:
-  weekly_rent: 650
+  weekly_rent: 750
   rent_increase_rate: 0.04
   renters_insurance_annual: 300
 
@@ -30,4 +30,4 @@ tax:
 
 inflation_rate: 0.03
 time_horizon_years: 30
-existing_savings: 200000
+existing_savings: 350000

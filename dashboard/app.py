@@ -9,7 +9,9 @@ st.set_page_config(
 )
 
 from housing.config import dict_to_params, params_to_dict
+from housing.mc_params import MCConfig
 from housing.model import simulate, net_worth_at_sale
+from housing.monte_carlo import mc_simulate, summarize
 from housing.output import crossover_year, to_csv
 from housing.sensitivity import frange, sweep
 
@@ -22,6 +24,7 @@ from dashboard.charts import (
     sensitivity_chart,
 )
 from dashboard.formatters import sale_comparison_dataframe, snapshot_dataframe
+from dashboard.mc_charts import fan_chart, prob_buy_wins_chart, terminal_histogram
 from dashboard.sidebar import render_sidebar
 
 
@@ -46,6 +49,15 @@ def cached_sale(params_dict: dict, year: int) -> dict:
 def cached_sweep(params_dict: dict, param_path: str, values_tuple: tuple) -> list:
     params = dict_to_params(params_dict)
     return sweep(params, param_path, list(values_tuple))
+
+
+@st.cache_data
+def cached_mc(params_dict: dict, n_runs: int, seed: int | None, **vol_overrides):
+    params = dict_to_params(params_dict)
+    config = MCConfig(n_runs=n_runs, seed=seed, **vol_overrides)
+    ts = mc_simulate(params, config)
+    summary = summarize(ts)
+    return ts, summary
 
 
 # --- Layout ---
@@ -90,8 +102,8 @@ m7.metric(
 st.divider()
 
 # --- Tabs ---
-tab_nw, tab_costs, tab_equity, tab_sens, tab_data = st.tabs(
-    ["Net Worth", "Housing Costs", "Equity & Debt", "Sensitivity", "Data"]
+tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_data = st.tabs(
+    ["Net Worth", "Housing Costs", "Equity & Debt", "Monte Carlo", "Sensitivity", "Data"]
 )
 
 with tab_nw:
@@ -116,6 +128,128 @@ with tab_costs:
 
 with tab_equity:
     st.plotly_chart(equity_buildup_chart(snapshots), use_container_width=True)
+
+with tab_mc:
+    mc_enabled = st.checkbox("Enable Monte Carlo simulation", key="mc_enabled")
+
+    if mc_enabled:
+        mc_c1, mc_c2 = st.columns(2)
+        n_runs = mc_c1.slider(
+            "Number of runs",
+            min_value=500,
+            max_value=10_000,
+            value=5_000,
+            step=500,
+            key="mc_n_runs",
+        )
+        seed_input = mc_c2.number_input(
+            "Random seed (0 = random)",
+            min_value=0,
+            max_value=999_999,
+            value=0,
+            step=1,
+            key="mc_seed",
+        )
+        seed = seed_input if seed_input > 0 else None
+
+        with st.expander("Volatility settings"):
+            vc1, vc2 = st.columns(2)
+            std_prop = vc1.slider(
+                "Property appreciation std",
+                min_value=0.0, max_value=0.25, value=0.10, step=0.01,
+                key="mc_std_prop",
+                help="Annual standard deviation of property appreciation rate",
+            )
+            std_inv = vc2.slider(
+                "Investment return std",
+                min_value=0.0, max_value=0.30, value=0.15, step=0.01,
+                key="mc_std_inv",
+                help="Annual standard deviation of investment returns",
+            )
+            vc3, vc4 = st.columns(2)
+            std_rent = vc3.slider(
+                "Rent increase std",
+                min_value=0.0, max_value=0.05, value=0.02, step=0.005,
+                key="mc_std_rent",
+            )
+            std_infl = vc4.slider(
+                "Inflation std",
+                min_value=0.0, max_value=0.04, value=0.015, step=0.005,
+                key="mc_std_infl",
+            )
+            std_mort = st.slider(
+                "Mortgage rate std",
+                min_value=0.0, max_value=0.03, value=0.01, step=0.005,
+                key="mc_std_mort",
+            )
+
+        # Run MC simulation (cached)
+        ts, summary = cached_mc(
+            params_dict,
+            n_runs=n_runs,
+            seed=seed,
+            std_property_appreciation=std_prop,
+            std_investment_return=std_inv,
+            std_rent_increase=std_rent,
+            std_inflation=std_infl,
+            std_mortgage_rate=std_mort,
+        )
+
+        # Summary stats
+        horizon = params.time_horizon_years
+        st.subheader("Summary")
+        sc1, sc2, sc3, sc4 = st.columns(4)
+        med_diff = summary.diff_pctiles[50][horizon]
+        sc1.metric("Median Difference", f"${med_diff:,.0f}")
+        prob_bw = summary.prob_buy_wins[horizon] * 100
+        sc2.metric(f"P(Buy wins) at Year {horizon}", f"{prob_bw:.1f}%")
+        p10 = summary.diff_pctiles[10][horizon]
+        p90 = summary.diff_pctiles[90][horizon]
+        sc3.metric("10th Percentile", f"${p10:,.0f}")
+        sc4.metric("90th Percentile", f"${p90:,.0f}")
+
+        if summary.median_crossover:
+            st.caption(f"Median crossover year: {summary.median_crossover}")
+
+        # Fan charts
+        st.plotly_chart(
+            fan_chart(summary, "difference", "Net Worth Difference (Buy - Rent)"),
+            use_container_width=True,
+        )
+
+        fc1, fc2 = st.columns(2)
+        with fc1:
+            st.plotly_chart(
+                fan_chart(summary, "buy", "Buy Net Worth"),
+                use_container_width=True,
+            )
+        with fc2:
+            st.plotly_chart(
+                fan_chart(summary, "rent", "Rent Net Worth"),
+                use_container_width=True,
+            )
+
+        # Probability chart
+        st.plotly_chart(
+            prob_buy_wins_chart(summary), use_container_width=True
+        )
+
+        # Terminal distribution
+        hist_year = st.slider(
+            "Distribution at year",
+            min_value=1,
+            max_value=horizon,
+            value=horizon,
+            key="mc_hist_year",
+        )
+        st.plotly_chart(
+            terminal_histogram(ts, hist_year), use_container_width=True
+        )
+    else:
+        st.info(
+            "Enable Monte Carlo simulation above to see probabilistic outcomes "
+            "with fan charts showing the range of likely results."
+        )
 
 with tab_sens:
     SWEEP_PARAMS = {

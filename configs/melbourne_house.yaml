@@ -1,16 +1,25 @@
-# Melbourne house with VIC stamp duty
+# Melbourne middle-ring house (e.g., Reservoir, Coburg, Box Hill)
 buy:
-  purchase_price: 750000
+  purchase_price: 1050000
   deposit_pct: 0.20
   mortgage_rate: 0.062
   mortgage_term_years: 30
   property_appreciation_rate: 0.045
   state: VIC
   first_home_buyer: false
+  new_build: false
+  council_rates_pct: 0.0025
+  insurance_pct: 0.0015
+  maintenance_pct: 0.01
+  water_rates_annual: 1100
+  strata_annual: 0
+  selling_agent_pct: 0.02
+  selling_legal: 2000
 
 rent:
-  weekly_rent: 580
+  weekly_rent: 550
   rent_increase_rate: 0.04
+  renters_insurance_annual: 300
 
 investment:
   return_rate: 0.07
@@ -21,4 +30,4 @@ tax:
 
 inflation_rate: 0.03
 time_horizon_years: 30
-existing_savings: 200000
+existing_savings: 250000
