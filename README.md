@@ -186,6 +186,13 @@ dashboard's Docs tab:
   descriptions, correlation matrix explanations, calibration rationale, and
   known limitations
 
+## Disclaimer
+
+This tool is for **educational and informational purposes only**. It is not
+financial advice. The model makes simplifying assumptions and uses estimated
+parameters that may not reflect your actual situation. Always consult a
+qualified financial adviser before making property or investment decisions.
+
 ## License
 
-Private / All rights reserved.
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
