@@ -82,6 +82,12 @@ winner = "Buy" if diff > 0 else "Rent"
 m3.metric("Difference", f"${abs(diff):,.0f}", delta=f"{winner} wins")
 xover = crossover_year(snapshots)
 m4.metric("Crossover Year", f"Year {xover}" if xover else "Never")
+st.caption(
+    "**Row 1** — Nominal net worth at the end of the time horizon. "
+    "Buy = property value minus mortgage plus invested surplus. "
+    "Rent = full investment portfolio after paying rent. "
+    "Crossover is the first year where buying pulls ahead of renting."
+)
 
 # Row 2: After-tax liquidation
 m5, m6, m7 = st.columns(3)
@@ -99,6 +105,11 @@ m7.metric(
     "After-tax Diff (real)",
     f"${abs(sale_diff):,.0f}",
     delta=f"{sale_winner} wins",
+)
+st.caption(
+    "**Row 2** — What you'd actually walk away with if you liquidated everything at the "
+    "end of the horizon, after selling costs (agent commission, legal fees), capital gains "
+    "tax, and adjusting for inflation. This is the most realistic comparison."
 )
 
 st.divider()
@@ -119,17 +130,43 @@ with tab_nw:
     st.plotly_chart(
         net_worth_chart(snapshots, real=use_real), use_container_width=True
     )
+    st.caption(
+        "Total net worth over time for each scenario. Buy net worth = property value "
+        "minus remaining mortgage plus any invested surplus. Rent net worth = the full "
+        "investment portfolio. Toggle between nominal and real (inflation-adjusted) values."
+    )
     st.plotly_chart(
         net_worth_difference_chart(snapshots, real=use_real),
         use_container_width=True,
     )
+    st.caption(
+        "The gap between buy and rent net worth each year. Positive values mean buying is "
+        "ahead; negative means renting is ahead. The crossover point (if any) is where "
+        "the line crosses zero."
+    )
 
 with tab_costs:
     st.plotly_chart(housing_costs_chart(snapshots), use_container_width=True)
+    st.caption(
+        "Annual housing costs for each scenario. Buy includes mortgage repayments, "
+        "council rates, insurance, maintenance, water, and strata. Rent includes "
+        "weekly rent and renters insurance. Both increase with inflation over time."
+    )
     st.plotly_chart(cumulative_costs_chart(snapshots), use_container_width=True)
+    st.caption(
+        "Total cumulative amount spent on housing from year 0 to each year. "
+        "This shows the running total of all cash outlays — note that mortgage "
+        "payments include principal repayment (which builds equity) as well as interest."
+    )
 
 with tab_equity:
     st.plotly_chart(equity_buildup_chart(snapshots), use_container_width=True)
+    st.caption(
+        "Tracks the buyer's property equity (property value minus mortgage balance), "
+        "the remaining mortgage balance, and the renter's investment portfolio. "
+        "The buyer's equity grows from both property appreciation and mortgage paydown. "
+        "The renter's portfolio grows from investment returns on the full savings pool."
+    )
 
 with tab_mc:
     mc_enabled = st.checkbox("Enable Monte Carlo simulation", key="mc_enabled")
@@ -218,6 +255,11 @@ with tab_mc:
             fan_chart(summary, "difference", "Net Worth Difference (Buy - Rent)"),
             use_container_width=True,
         )
+        st.caption(
+            "Fan chart showing the range of buy-minus-rent outcomes across all simulations. "
+            "The inner band is the 25th-75th percentile (middle 50% of outcomes), the outer "
+            "band is 10th-90th. If the median stays below zero, renting is more likely to win."
+        )
 
         fc1, fc2 = st.columns(2)
         with fc1:
@@ -225,15 +267,28 @@ with tab_mc:
                 fan_chart(summary, "buy", "Buy Net Worth"),
                 use_container_width=True,
             )
+            st.caption(
+                "Distribution of buy-scenario net worth across simulations. Wider bands "
+                "indicate more uncertainty, driven mainly by property appreciation volatility."
+            )
         with fc2:
             st.plotly_chart(
                 fan_chart(summary, "rent", "Rent Net Worth"),
                 use_container_width=True,
             )
+            st.caption(
+                "Distribution of rent-scenario net worth. Typically wider than buy because "
+                "equity market returns (15% std) are more volatile than property (10% std)."
+            )
 
         # Probability chart
         st.plotly_chart(
             prob_buy_wins_chart(summary), use_container_width=True
+        )
+        st.caption(
+            "The percentage of simulations where buying has a higher net worth than renting "
+            "at each year. Above 50% means buying wins more often than not. This accounts "
+            "for the full range of correlated economic scenarios."
         )
 
         # Terminal distribution
@@ -247,6 +302,11 @@ with tab_mc:
         st.plotly_chart(
             terminal_histogram(ts, hist_year), use_container_width=True
         )
+        st.caption(
+            "Overlaid histograms of buy and rent net worth at the selected year. "
+            "Where the distributions overlap, outcomes are similar. Dashed lines "
+            "show the median for each scenario. Use the slider to explore different years."
+        )
     else:
         st.info(
             "Enable Monte Carlo simulation above to see probabilistic outcomes "
@@ -254,6 +314,12 @@ with tab_mc:
         )
 
 with tab_sens:
+    st.caption(
+        "Sweep a single parameter across a range of values while holding everything "
+        "else constant. The chart shows how the final net worth difference (buy minus "
+        "rent) changes as the selected parameter varies. Useful for identifying which "
+        "assumptions matter most to the outcome."
+    )
     SWEEP_PARAMS = {
         "Mortgage Rate": ("buy.mortgage_rate", 0.03, 0.09, 0.005, True),
         "Purchase Price": ("buy.purchase_price", 500_000, 1_500_000, 50_000, False),
@@ -312,9 +378,19 @@ with tab_sens:
 
 with tab_data:
     st.subheader("Year-by-Year Breakdown")
+    st.caption(
+        "Full year-by-year simulation data for both scenarios, including property value, "
+        "mortgage balance, investment portfolio, annual costs, and net worth in both "
+        "nominal and real (inflation-adjusted) terms."
+    )
     st.dataframe(snapshot_dataframe(snapshots), use_container_width=True, height=400)
 
     st.subheader("After-Tax Liquidation at Key Years")
+    st.caption(
+        "What you'd walk away with if you sold the property (or liquidated investments) "
+        "at years 5, 10, 15, 20, 25, and 30. Accounts for selling costs, capital gains "
+        "tax with the 50% discount, and inflation adjustment."
+    )
     st.dataframe(
         sale_comparison_dataframe(snapshots, params), use_container_width=True
     )
