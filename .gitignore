@@ -4,4 +4,4 @@ __pycache__/
 .pytest_cache/
 dist/
 build/
-.streamlit/
+.streamlit/secrets.toml

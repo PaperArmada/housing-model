@@ -63,6 +63,15 @@ housing defaults
 pytest
 ```
 
+### Deploy to Streamlit Cloud
+
+The repo is deploy-ready for [Streamlit Community Cloud](https://share.streamlit.io):
+
+1. Push to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub
+3. Click "New app" and select this repo, branch `main`, file `dashboard/app.py`
+4. Deploy — dependencies are installed automatically from `requirements.txt`
+
 ## What It Does
 
 The model simulates two parallel financial paths over a configurable time
