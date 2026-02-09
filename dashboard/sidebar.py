@@ -23,6 +23,7 @@ PRESETS = {
     "Melbourne Apartment": "melbourne_apartment.yaml",
     "Brisbane First Home": "brisbane_first_home.yaml",
     "Rate Drop Scenario": "rate_drop_scenario.yaml",
+    "Rate Rise Scenario": "rate_rise_scenario.yaml",
 }
 
 # Default values for all widget keys — used for first-run initialization

@@ -1,0 +1,32 @@
+# Scenario: rates start moderate then rise over several years
+buy:
+  purchase_price: 800000
+  deposit_pct: 0.20
+  mortgage_rate: 0.055  # starting rate
+  mortgage_term_years: 30
+  property_appreciation_rate: 0.05
+  state: NSW
+  rate_schedule:
+    - year: 1
+      rate: 0.055
+    - year: 3
+      rate: 0.062
+    - year: 5
+      rate: 0.070
+    - year: 8
+      rate: 0.075
+
+rent:
+  weekly_rent: 650
+  rent_increase_rate: 0.04
+
+investment:
+  return_rate: 0.07
+  dividend_yield: 0.02
+
+tax:
+  gross_income: 180000
+
+inflation_rate: 0.03
+time_horizon_years: 30
+existing_savings: 200000
