@@ -53,7 +53,7 @@ _DEFAULTS = {
     "inv_franking": 0.0,
     "tax_income": 75_000,
     "inflation": 3.0,
-    "time_horizon": 30,
+    "time_horizon": 40,
     "existing_savings": 100_000,
 }
 
@@ -145,7 +145,7 @@ def _apply_preset():
 
     # Scenario
     st.session_state.inflation = params.inflation_rate * 100
-    st.session_state.time_horizon = params.time_horizon_years
+    st.session_state.time_horizon = min(b.mortgage_term_years + 10, 40)
     st.session_state.existing_savings = params.existing_savings
 
     _snapshot_preset(name)
@@ -235,6 +235,9 @@ def render_sidebar() -> ScenarioParams:
             key="buy_mortgage_term",
             help="Loan repayment period.",
         )
+        # Auto-set time horizon to mortgage term + 10
+        st.session_state.time_horizon = min(mortgage_term + 10, 40)
+
         # Auto-estimate LMI based on deposit and purchase price
         lvr = 1 - deposit_pct / 100
         loan_for_lmi = purchase_price * lvr
