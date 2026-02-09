@@ -89,6 +89,41 @@ def net_worth_difference_chart(
     return fig
 
 
+def liquidated_difference_chart(
+    snapshots: list[YearSnapshot], params: ScenarioParams, real: bool = False
+) -> go.Figure:
+    """Bar chart of liquidated net worth difference (buy - rent) per year."""
+    years = []
+    diffs = []
+
+    for s in snapshots:
+        result = net_worth_at_sale(s, params)
+        years.append(s.year)
+        diffs.append(result["difference_real"] if real else result["difference"])
+
+    colors = ["#4CAF50" if d >= 0 else "#F44336" for d in diffs]
+    labels = ["Buy wins" if d >= 0 else "Rent wins" for d in diffs]
+
+    fig = go.Figure(
+        go.Bar(
+            x=years,
+            y=diffs,
+            marker_color=colors,
+            hovertemplate="Year %{x}<br>%{text}: $%{y:,.0f}<extra></extra>",
+            text=labels,
+            textposition="none",
+        )
+    )
+    fig.update_layout(
+        title="Liquidated Difference (Buy - Rent)",
+        xaxis_title="Year",
+        yaxis_title="Difference ($)",
+        yaxis_tickformat="$,.0f",
+        margin=dict(t=60, b=40),
+    )
+    return fig
+
+
 def liquidated_net_worth_chart(
     snapshots: list[YearSnapshot], params: ScenarioParams, real: bool = False
 ) -> go.Figure:

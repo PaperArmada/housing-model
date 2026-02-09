@@ -44,6 +44,7 @@ from dashboard.charts import (
     cumulative_costs_chart,
     equity_buildup_chart,
     housing_costs_chart,
+    liquidated_difference_chart,
     liquidated_net_worth_chart,
     net_worth_chart,
     net_worth_difference_chart,
@@ -202,45 +203,64 @@ tab_nw, tab_costs, tab_equity, tab_mc, tab_sens, tab_compare, tab_data, tab_docs
 ])
 
 with tab_nw:
-    use_real = st.radio(
-        "Values",
-        ["Nominal", "Real (inflation-adjusted)"],
-        horizontal=True,
-        key="nw_real_toggle",
-    ).startswith("Real")
+    toggle_col1, toggle_col2 = st.columns(2)
+    with toggle_col1:
+        use_liquidated = st.radio(
+            "View",
+            ["Paper", "Liquidated"],
+            horizontal=True,
+            key="nw_view_toggle",
+            help=(
+                "**Paper**: raw net worth (property equity + investments). "
+                "**Liquidated**: after selling costs, mortgage payoff, and capital gains tax."
+            ),
+        ) == "Liquidated"
+    with toggle_col2:
+        use_real = st.radio(
+            "Values",
+            ["Nominal", "Real (inflation-adjusted)"],
+            horizontal=True,
+            key="nw_real_toggle",
+        ).startswith("Real")
 
-    st.plotly_chart(
-        net_worth_chart(snapshots, real=use_real), width="stretch"
-    )
-    st.caption(
-        "Total net worth over time for each scenario. Buy net worth = property value "
-        "minus remaining mortgage plus any invested surplus. Rent net worth = the full "
-        "investment portfolio. Toggle between nominal and real (inflation-adjusted) values."
-    )
-    st.plotly_chart(
-        net_worth_difference_chart(snapshots, real=use_real),
-        width="stretch",
-    )
-    st.caption(
-        "The gap between buy and rent net worth each year. Positive values mean buying is "
-        "ahead; negative means renting is ahead. The crossover point (if any) is where "
-        "the line crosses zero."
-    )
-
-    st.divider()
-    st.subheader("After Liquidation")
-    st.plotly_chart(
-        liquidated_net_worth_chart(snapshots, params, real=use_real),
-        width="stretch",
-    )
-    st.caption(
-        "What you'd actually walk away with if you liquidated everything at each year. "
-        "**Buy**: sell property (PPOR, so no CGT), pay agent commission and legal fees, "
-        "pay off remaining mortgage, plus invested surplus (after CGT on gains). "
-        "**Rent**: liquidate investment portfolio (after CGT with 50% discount). "
-        "This is the most realistic comparison — the charts above show 'paper' net worth "
-        "that doesn't account for selling costs or capital gains tax."
-    )
+    if use_liquidated:
+        st.plotly_chart(
+            liquidated_net_worth_chart(snapshots, params, real=use_real),
+            width="stretch",
+        )
+        st.caption(
+            "What you'd actually walk away with if you liquidated everything at each year. "
+            "**Buy**: sell property (PPOR, so no CGT), pay agent commission and legal fees, "
+            "pay off remaining mortgage, plus invested surplus (after CGT on gains). "
+            "**Rent**: liquidate investment portfolio (after CGT with 50% discount)."
+        )
+        st.plotly_chart(
+            liquidated_difference_chart(snapshots, params, real=use_real),
+            width="stretch",
+        )
+        st.caption(
+            "The gap between buy and rent after-liquidation net worth each year. "
+            "This accounts for selling costs and capital gains tax, so the crossover "
+            "typically occurs later than in the paper view."
+        )
+    else:
+        st.plotly_chart(
+            net_worth_chart(snapshots, real=use_real), width="stretch"
+        )
+        st.caption(
+            "Total net worth over time for each scenario. Buy net worth = property value "
+            "minus remaining mortgage plus any invested surplus. Rent net worth = the full "
+            "investment portfolio. Switch to **Liquidated** to see after selling costs and CGT."
+        )
+        st.plotly_chart(
+            net_worth_difference_chart(snapshots, real=use_real),
+            width="stretch",
+        )
+        st.caption(
+            "The gap between buy and rent net worth each year. Positive values mean buying is "
+            "ahead; negative means renting is ahead. The crossover point (if any) is where "
+            "the line crosses zero."
+        )
 
 with tab_costs:
     st.plotly_chart(housing_costs_chart(snapshots), width="stretch")
