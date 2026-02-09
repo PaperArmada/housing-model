@@ -301,15 +301,28 @@ def simulate(params: ScenarioParams) -> list[YearSnapshot]:
 def net_worth_at_sale(snapshot: YearSnapshot, params: ScenarioParams) -> dict:
     """Calculate after-tax net worth if liquidating everything at a given year.
 
-    Buy: sell property (CGT-exempt for PPOR), pay agent fees, keep investments.
-    Rent: sell investments, pay CGT on capital gains (with 50% discount).
+    Buy scenario:
+      - Sell property (PPOR = CGT-exempt) for market value
+      - Deduct agent commission (% of sale price)
+      - Deduct legal/conveyancing costs (inflated to sale year)
+      - Pay off remaining mortgage (full recourse — shortfall comes from savings)
+      - Liquidate any invested surplus, paying CGT on gains (50% discount if held >12mo)
+
+    Rent scenario:
+      - Liquidate investment portfolio
+      - Pay CGT on capital gains (50% discount if held >12mo)
     """
     buy = params.buy
     tax = params.tax
 
-    # Buy: sell property (PPOR = no CGT)
-    sale_proceeds = snapshot.property_value * (1 - buy.selling_agent_pct) - buy.selling_legal
-    buy_after_sale = max(sale_proceeds - snapshot.mortgage_balance, 0) + snapshot.buy_investments
+    # Buy: sell property (PPOR = no CGT on property itself)
+    # Legal costs inflate with CPI (agent commission scales naturally via % of value)
+    legal_costs = buy.selling_legal * (1 + params.inflation_rate) ** snapshot.year
+    sale_proceeds = snapshot.property_value * (1 - buy.selling_agent_pct) - legal_costs
+
+    # Full recourse mortgage: if underwater, shortfall comes from investments.
+    # No max(..., 0) — negative equity is real in Australia.
+    buy_after_sale = (sale_proceeds - snapshot.mortgage_balance) + snapshot.buy_investments
 
     # Buy-side investments also have CGT if liquidated
     buy_inv_gains = max(snapshot.buy_investments - snapshot.buy_contributions, 0)

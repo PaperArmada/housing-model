@@ -2,8 +2,9 @@
 
 import plotly.graph_objects as go
 
-from housing.model import YearSnapshot
+from housing.model import YearSnapshot, net_worth_at_sale
 from housing.output import crossover_year
+from housing.params import ScenarioParams
 from housing.sensitivity import SweepResult
 
 
@@ -83,6 +84,76 @@ def net_worth_difference_chart(
         xaxis_title="Year",
         yaxis_title="Difference ($)",
         yaxis_tickformat="$,.0f",
+        margin=dict(t=60, b=40),
+    )
+    return fig
+
+
+def liquidated_net_worth_chart(
+    snapshots: list[YearSnapshot], params: ScenarioParams, real: bool = False
+) -> go.Figure:
+    """Net worth after full liquidation — selling costs, CGT, and mortgage payoff.
+
+    This is the "walk-away-with" view: what each scenario yields if you
+    sell the property / liquidate the portfolio at every year along the timeline.
+    """
+    years = []
+    buy_vals = []
+    rent_vals = []
+
+    for s in snapshots:
+        result = net_worth_at_sale(s, params)
+        years.append(s.year)
+        if real:
+            buy_vals.append(result["buy_net_worth_after_sale_real"])
+            rent_vals.append(result["rent_net_worth_after_tax_real"])
+        else:
+            buy_vals.append(result["buy_net_worth_after_sale"])
+            rent_vals.append(result["rent_net_worth_after_tax"])
+
+    label = "real" if real else "nominal"
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=buy_vals,
+            name="Buy (after sale)",
+            line=dict(color="#2196F3", width=2.5),
+            hovertemplate="Year %{x}<br>Buy: $%{y:,.0f}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=years,
+            y=rent_vals,
+            name="Rent (after CGT)",
+            line=dict(color="#FF9800", width=2.5),
+            hovertemplate="Year %{x}<br>Rent: $%{y:,.0f}<extra></extra>",
+        )
+    )
+
+    # Find liquidated crossover (first year buy overtakes rent)
+    for i in range(1, len(years)):
+        prev_diff = buy_vals[i - 1] - rent_vals[i - 1]
+        curr_diff = buy_vals[i] - rent_vals[i]
+        if prev_diff <= 0 and curr_diff > 0:
+            fig.add_vline(
+                x=years[i],
+                line_dash="dash",
+                line_color="gray",
+                annotation_text=f"Crossover: Year {years[i]}",
+                annotation_position="top left",
+            )
+            break
+
+    fig.update_layout(
+        title=f"Liquidated Net Worth: Buy vs Rent ({label})",
+        xaxis_title="Year",
+        yaxis_title="Net Worth ($)",
+        yaxis_tickformat="$,.0f",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(t=60, b=40),
     )
     return fig

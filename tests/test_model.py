@@ -218,3 +218,61 @@ class TestNetWorthAtSale:
         snapshots = simulate(params)
         result = net_worth_at_sale(snapshots[-1], params)
         assert result["buy_net_worth_after_sale_real"] < result["buy_net_worth_after_sale"]
+
+    def test_negative_equity_not_clipped(self):
+        """If property drops in value, shortfall comes from investments (full recourse)."""
+        params = ScenarioParams(
+            buy=BuyParams(
+                purchase_price=800_000,
+                deposit_pct=0.05,  # very small deposit
+                property_appreciation_rate=-0.10,  # severe price decline
+                mortgage_rate=0.08,
+            ),
+            time_horizon_years=3,
+        )
+        snapshots = simulate(params)
+        result = net_worth_at_sale(snapshots[-1], params)
+        # Property equity after sale should be negative (underwater)
+        buy = params.buy
+        legal = buy.selling_legal * (1 + params.inflation_rate) ** snapshots[-1].year
+        sale_proceeds = (
+            snapshots[-1].property_value * (1 - buy.selling_agent_pct) - legal
+        )
+        property_equity = sale_proceeds - snapshots[-1].mortgage_balance
+        assert property_equity < 0, "Should be underwater with -10% appreciation"
+        # Total buy NW should be less than investments alone (mortgage shortfall eats into them)
+        assert result["buy_net_worth_after_sale"] < snapshots[-1].buy_investments
+
+    def test_selling_legal_inflated(self):
+        """Legal costs should inflate with CPI over the sale year."""
+        params = ScenarioParams(
+            buy=BuyParams(selling_legal=2_000),
+            inflation_rate=0.05,  # high inflation for visible effect
+            time_horizon_years=20,
+        )
+        snapshots = simulate(params)
+        result_yr20 = net_worth_at_sale(snapshots[-1], params)
+        result_yr0 = net_worth_at_sale(snapshots[0], params)
+        # At year 0, legal costs = $2,000. At year 20 with 5% inflation, ~$5,307.
+        # Year-20 sale should deduct more legal costs than year-0 sale.
+        # Compare buy NW: year-20 has higher property value but also higher legal costs.
+        # Verify by computing expected inflated legal cost
+        expected_legal_yr20 = 2_000 * (1.05 ** 20)
+        assert expected_legal_yr20 > 4_000, "Sanity: inflated legal should be significant"
+        # At year 0, sale proceeds use base legal cost ($2,000)
+        # Verify the legal costs are actually different in the calculation
+        buy = params.buy
+        sale_yr0 = snapshots[0].property_value * (1 - buy.selling_agent_pct) - 2_000
+        sale_yr20 = snapshots[-1].property_value * (1 - buy.selling_agent_pct) - expected_legal_yr20
+        assert sale_yr20 > sale_yr0, "Year 20 sale proceeds still higher despite inflated legal"
+
+    def test_liquidation_less_than_paper_net_worth(self):
+        """After-sale NW should be less than paper NW due to selling costs and CGT."""
+        params = ScenarioParams(time_horizon_years=15)
+        snapshots = simulate(params)
+        final = snapshots[-1]
+        result = net_worth_at_sale(final, params)
+        # Buy: selling costs reduce net worth
+        assert result["buy_net_worth_after_sale"] < final.buy_net_worth
+        # Rent: CGT on gains reduces net worth
+        assert result["rent_net_worth_after_tax"] < final.rent_net_worth

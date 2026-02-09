@@ -44,6 +44,7 @@ from dashboard.charts import (
     cumulative_costs_chart,
     equity_buildup_chart,
     housing_costs_chart,
+    liquidated_net_worth_chart,
     net_worth_chart,
     net_worth_difference_chart,
     sensitivity_chart,
@@ -224,6 +225,21 @@ with tab_nw:
         "The gap between buy and rent net worth each year. Positive values mean buying is "
         "ahead; negative means renting is ahead. The crossover point (if any) is where "
         "the line crosses zero."
+    )
+
+    st.divider()
+    st.subheader("After Liquidation")
+    st.plotly_chart(
+        liquidated_net_worth_chart(snapshots, params, real=use_real),
+        width="stretch",
+    )
+    st.caption(
+        "What you'd actually walk away with if you liquidated everything at each year. "
+        "**Buy**: sell property (PPOR, so no CGT), pay agent commission and legal fees, "
+        "pay off remaining mortgage, plus invested surplus (after CGT on gains). "
+        "**Rent**: liquidate investment portfolio (after CGT with 50% discount). "
+        "This is the most realistic comparison — the charts above show 'paper' net worth "
+        "that doesn't account for selling costs or capital gains tax."
     )
 
 with tab_costs:
