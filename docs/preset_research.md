@@ -209,6 +209,148 @@ Footscray, South Yarra).
 
 ---
 
+## Brisbane First Home
+
+**Config file:** `configs/brisbane_first_home.yaml`
+
+**Location proxy:** Brisbane house suitable for a first home buyer (e.g., outer suburbs,
+Ipswich corridor, Moreton Bay).
+
+### Property
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| Purchase price | $600,000 | Below the $700,000 QLD first home buyer stamp duty exemption cap for existing properties |
+| Deposit | 10% ($60,000) | Common for FHBs — lower deposit to get into market sooner |
+| State | QLD | |
+| First home buyer | Yes | Enables QLD stamp duty exemption |
+| New build | No | Existing dwelling |
+| Appreciation | 5.0% p.a. | Brisbane has outperformed recently; 5% is moderate for forward-looking |
+| LMI | $8,000 | ~1.3% of $540k loan at 90% LVR — typical for 10% deposit |
+
+### Ongoing Costs
+
+Uses model defaults (council 0.3%, insurance 0.2%, maintenance 1.0%, water $1,200, no strata).
+
+### Rent
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| Weekly rent | $500 | Brisbane median house rent ~$550-600 (2025); $500 targets affordable outer-ring |
+| Rent increase | 4.0% p.a. | Consistent with other presets |
+| Renters insurance | $300/yr | Default |
+
+### Financial Profile
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| Gross income | $120,000 | Moderate income — serviceable for $540k loan (~$3.9k/month at 6.2%) |
+| Existing savings | $100,000 | Covers deposit ($60k) + LMI ($8k), with ~$32k buffer for stamp duty (exempt as FHB) and costs |
+
+### Notes
+
+This preset demonstrates the QLD first home buyer stamp duty exemption (fully exempt
+below $700k for existing properties). LMI is explicitly set at $8,000 rather than
+relying on auto-calculation, matching typical quotes for 90% LVR at this price point.
+
+---
+
+## Rate Drop Scenario
+
+**Config file:** `configs/rate_drop_scenario.yaml`
+
+**Purpose:** Models a falling interest rate environment — rates start at 6.5% and
+progressively drop to 4.8% over 8 years. Useful for stress-testing how rate cuts
+affect the buy-vs-rent outcome.
+
+### Rate Schedule
+
+| Period | Rate | Rationale |
+|---|---|---|
+| Years 1-2 | 6.5% | Starting rate — current market level |
+| Years 3-4 | 5.8% | First easing cycle — 70bp cut |
+| Years 5-7 | 5.2% | Continued easing |
+| Year 8+ | 4.8% | Terminal rate — close to estimated neutral |
+
+### Other Parameters
+
+Base Sydney scenario ($800k purchase, 20% deposit, $650/wk rent, $180k income, $200k
+savings). All non-rate parameters match the standard assumptions so the rate schedule
+effect can be isolated.
+
+### Notes
+
+Compare this directly with the Rate Rise Scenario and a flat-rate Sydney scenario to
+see how rate trajectory affects the crossover year and terminal net worth difference.
+
+---
+
+## Rate Rise Scenario
+
+**Config file:** `configs/rate_rise_scenario.yaml`
+
+**Purpose:** Models a rising interest rate environment — rates start at 5.5% and
+progressively rise to 7.5% over 8 years. The mirror image of the Rate Drop Scenario.
+
+### Rate Schedule
+
+| Period | Rate | Rationale |
+|---|---|---|
+| Years 1-2 | 5.5% | Starting rate — slightly below current market |
+| Years 3-4 | 6.2% | First tightening cycle — 70bp increase |
+| Years 5-7 | 7.0% | Continued tightening |
+| Year 8+ | 7.5% | Terminal rate — elevated rate environment |
+
+### Other Parameters
+
+Identical base scenario to the Rate Drop preset ($800k purchase, 20% deposit, $650/wk
+rent, $180k income, $200k savings) so the two are directly comparable.
+
+### Notes
+
+Rising rates increase mortgage costs and typically suppress property appreciation, but
+the model holds appreciation constant. In the Monte Carlo simulation, the negative
+correlation between mortgage rates and property appreciation (-0.25) captures this
+relationship stochastically.
+
+---
+
+## Default Preset
+
+The Default preset is not a YAML config file — it is the set of initial widget values
+shown when no preset is loaded. These are defined in `dashboard/sidebar.py:_DEFAULTS`.
+
+**Purpose:** Provide a reasonable starting point for an average American budget, since
+the model's tax calculations and stamp duty are Australian-specific but the financial
+concepts are universal.
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| Purchase price | $450,000 | US median home price ~$420k (2025), rounded up |
+| Deposit | 20% | Standard to avoid PMI (US equivalent of LMI) |
+| State | NSW | Model uses Australian tax/stamp duty calculations |
+| Appreciation | 4.0% p.a. | US long-term average ~3-5% |
+| Mortgage rate | 6.5% | US 30-year fixed rates ~6-7% (2025) |
+| Mortgage term | 30 years | Standard US mortgage |
+| Council rates | 0.25% | Proxy for US property tax (actual US rates 1-2% but model calculates differently) |
+| Insurance | 0.15% | |
+| Maintenance | 1.0% | Standard rule of thumb |
+| Water | $600/yr | US average ~$500-700/yr |
+| Agent commission | 2.5% | US typical 2.5-3% |
+| Legal costs | $3,000 | US closing costs higher than Australian |
+| Weekly rent | $450 | ~$1,950/month, US median ~$1,800-2,000 |
+| Rent increase | 3.5% p.a. | US average ~3-4% |
+| Renters insurance | $200/yr | US renters insurance ~$150-250 |
+| Investment return | 7.0% | S&P 500 long-term similar to ASX |
+| Dividend yield | 2.0% | |
+| Franking | 0.0% | No franking credits in US tax system |
+| Gross income | $75,000 | US median household income |
+| Inflation | 3.0% | |
+| Time horizon | 40 years | Auto-set to mortgage term + 10 |
+| Existing savings | $100,000 | Reasonable US savings for first home |
+
+---
+
 ## Cross-Preset Consistency
 
 All presets share the same:
@@ -227,9 +369,11 @@ What varies between presets:
 
 ## Known Limitations
 
-1. **No LMI modelling in base presets** — all assume 20% deposit. Buyers with less
-   deposit face additional LMI costs.
+1. **LMI auto-estimated, not quoted** — the dashboard auto-calculates LMI from a
+   published rate table when deposit < 20%. Actual premiums vary by insurer and lender.
+   See the [LMI Estimation](lmi_estimation.md) doc for details.
 2. **Single-rate mortgage** — actual rates vary by lender, LVR, and loan features.
+   The Rate Drop and Rate Rise presets demonstrate variable rate schedules.
 3. **Location averaging** — prices represent a broad middle-ring proxy, not any
    specific suburb.
 4. **Static rent/appreciation** — in reality these vary year-to-year (captured by MC
